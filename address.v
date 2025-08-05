@@ -27,6 +27,9 @@ pub fn StdAddr.from_string(s string) StdAddr {
 		panic('[ERROR] address format expected as "workchain:hex"')
 	}
 	wc := parts[0].i8()
+	if wc != 0 && wc != -1 {
+		panic('[ERROR] workchain should be -1 or 0')
+	}
 	addr := hex.decode(parts[1]) or { panic('[ERROR] while parsing address string') }
 	if addr.len != 32 {
 		panic('[ERROR] address hex should have 32 bytes')
