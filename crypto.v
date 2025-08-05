@@ -1,11 +1,9 @@
 module babyton
 
-///////////////////////
-// KeyPair submodule //
-///////////////////////
+//------------------
+// KeyPair submodule
+//------------------
 //
-// babyton/crypto.v
-// ----------------
 // Minimal functionality to generate new random keypair
 // or create keypair from secret key
 import crypto.ed25519
