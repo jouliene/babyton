@@ -1,8 +1,8 @@
 module babyton
 
-// =================
+// -----------------
 // Address submodule
-// =================
+// -----------------
 //
 // Minimal standard address type used by CellBuilder.store_address.
 // Ordinary-only: no anycast/exotic forms here.
