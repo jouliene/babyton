@@ -1,8 +1,9 @@
 # babyton
 Small SDK to work with TVM blockchains (TON, Everscale, Tycho)
 
-## Quick start
-'''v
+## quick start (main.v)
+```v
+
 import babyton { CellBuilder, build_boc_bytes, build_boc_base64, get_boc_from_bytes }
 
 fn main() {
@@ -31,4 +32,4 @@ fn main() {
 	println('BoC in bytes to base64:    ${boc_base64_2}')
 	
 }
-'''
+```
