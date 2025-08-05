@@ -184,7 +184,7 @@ pub fn (mut self CellBuilder) store_u64(n u64) {
 
 // ---------- Signed integers ----------
 
-// store n as a signed two's-complement integer using exactly `bits` bits
+// store n as a signed integer using exactly `bits` bits
 pub fn (mut self CellBuilder) store_int(n i64, bits int) {
 	if bits == 0 {
 		if n != 0 {
