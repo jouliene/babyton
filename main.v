@@ -29,7 +29,7 @@ fn main() {
 	root_cell := b2.build()
 	println(root_cell)
 	println('')
-	
+
 	boc := build_boc_bytes(root_cell)
 	println('Building BoC in hex bytes: ${boc.hex()}')	
 
@@ -37,6 +37,5 @@ fn main() {
 	println('Building BoC in base64:    ${boc_base64}')
 
 	boc_base64_2 := get_boc_from_bytes(boc)
-	println('BoC in bytes to base64:    ${boc_base64_2}')
-	
+	println('BoC in bytes to base64:    ${boc_base64_2}')	
 }
