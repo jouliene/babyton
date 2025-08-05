@@ -113,16 +113,16 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 
 	// Build BoC: header + body
 	mut boc := []u8{cap: 32 + total_cells_size}
-	
+
 	// Magic bytes for BoC
 	boc << [u8(0xb5), 0xee, 0x9c, 0x72]
-	
+
 	// Flags: has_idx=0, has_crc=0, has_cache_bits=0, flags=0, size_bytes	
 	boc << u8(size_bytes)
-	
+
 	// off_bytes
 	boc << u8(off_bytes)
-	
+
 	// Counts/sizes (all in `size_bytes`)
 	put_uint_be(mut boc, u32(cells_count), size_bytes) // cells_count
 	put_uint_be(mut boc, 1, size_bytes) // roots_count
@@ -134,7 +134,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 	for f in flats {
 		boc << f
 	}
-	
+
 	return boc
 }
 
@@ -144,6 +144,11 @@ pub fn build_boc_base64(root &Cell) string {
 }
 
 // Get BoC from bytes BoC
-pub fn get_boc_from_bytes(boc []u8) string {
+pub fn get_boc_base64_from_bytes(boc []u8) string {
 	return base64.encode(boc)
+}
+
+// Get bytes from base64
+pub fn get_boc_bytes_from_base64(boc string) []u8 {
+	return base64.decode(boc)
 }
