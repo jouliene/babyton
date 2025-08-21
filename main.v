@@ -1,8 +1,34 @@
-import babyton { KeyPair }
+import babyton { CellBuilder, KeyPair, StdAddr, build_boc_base64, build_boc_bytes }
 
 fn main() {
-	keypair := KeyPair.from_secret_string('8248d37cd689d02f4071dfa74737f6f23c85eebc46cdb44157a631a3f4d01f3a')
-	message := 'hello'.bytes()
-	signature := keypair.sign_raw(message)
-	println(signature.hex())
+	addr := StdAddr.from_string('0:538b6135fd39fc707b0c1459469db104383c431d4d116ffd0d58cc75c95a3f95')
+	println(addr)
+	println('')
+
+	keypair := KeyPair.generate()
+	println(keypair)
+	println('')
+
+	mut b1 := CellBuilder.new()
+	b1.store_uint(0x0AAAAA, 24)
+	b1.store_bool(true)
+	b1.store_i16(-48)
+	println(b1)
+	leaf_cell := b1.build()
+	println(leaf_cell)
+	println('')
+
+	mut b2 := CellBuilder.new()
+	b2.store_uint(0b10101, 5)
+	b2.store_ref(leaf_cell)
+	println(b2)
+	root_cell := b2.build()
+	println(root_cell)
+	println('')
+
+	boc := build_boc_bytes(root_cell)
+	println('Building BoC in hex bytes: ${boc.hex()}')
+
+	boc_base64 := build_boc_base64(root_cell)
+	println('Building BoC in base64:    ${boc_base64}')
 }
