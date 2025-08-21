@@ -115,7 +115,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 	}
 	root_idx := idx_of[hash_key(root)] // explicit root index
 
-	// Choose ref index width (unchanged)
+	// Choose ref index width
 	ref_size := choose_ref_size(cells_count)
 
 	// Serialize flat cells
@@ -127,7 +127,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 		flats << f
 	}
 
-	// IMPORTANT: use two widths (like Nekoton / Go code)
+	// IMPORTANT: use two widths
 	cell_size_bytes := choose_size_bytes(u32(cells_count)) // for counts & root indices
 	size_bytes := choose_size_bytes(u32(total_cells_size)) // for payload size (& offsets)
 	off_bytes := size_bytes
