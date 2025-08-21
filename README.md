@@ -3,11 +3,11 @@ Small SDK to work with TVM blockchains (TON, Everscale, Tycho)
 
 ## quick start (main.v)
 ```v
-import babyton { StdAddr, KeyPair, CellBuilder, build_boc_bytes, build_boc_base64, get_boc_from_bytes }
+import babyton { CellBuilder, KeyPair, StdAddr, build_boc_base64, build_boc_bytes }
 
 fn main() {
 	addr := StdAddr.from_string('0:538b6135fd39fc707b0c1459469db104383c431d4d116ffd0d58cc75c95a3f95')
-	println(addr)	
+	println(addr)
 	println('')
 
 	keypair := KeyPair.generate()
@@ -32,12 +32,9 @@ fn main() {
 	println('')
 
 	boc := build_boc_bytes(root_cell)
-	println('Building BoC in hex bytes: ${boc.hex()}')	
+	println('Building BoC in hex bytes: ${boc.hex()}')
 
 	boc_base64 := build_boc_base64(root_cell)
 	println('Building BoC in base64:    ${boc_base64}')
-
-	boc_base64_2 := get_boc_from_bytes(boc)
-	println('BoC in bytes to base64:    ${boc_base64_2}')	
 }
 ```
