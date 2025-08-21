@@ -4,6 +4,7 @@ module babyton
 // KeyPair submodule
 // -----------------
 import crypto.ed25519
+import crypto.sha256
 import encoding.hex
 
 pub struct KeyPair {
@@ -42,12 +43,18 @@ pub fn KeyPair.from_secret_string(secret string) KeyPair {
 }
 
 // Create 64 bytes / 512 bits ed25519 signature
-pub fn (self KeyPair) sign(message []u8) []u8 {
+pub fn (self KeyPair) sign_raw(message []u8) []u8 {
 	full_secret_key := ed25519.new_key_from_seed(self.secret)
 	signature := ed25519.sign(full_secret_key, message) or {
 		panic('[ERROR] Failed to sign message')
 	}
 	return signature
+}
+
+// Hash message first and then create 64 bytes ed25519 signature (TON canonical)
+pub fn (self KeyPair) sign(message []u8) []u8 {
+	message_hash := sha256.sum(message)
+	return self.sign_raw(message_hash)
 }
 
 // Verify signature
