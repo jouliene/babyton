@@ -1,43 +1,28 @@
-// Simple example code of using babyton sdk
-// v run .
-//
-import babyton { CellBuilder, KeyPair, StdAddr, build_boc_base64, build_boc_bytes, get_boc_base64_from_bytes, get_boc_bytes_from_base64 }
+import babyton { CellBuilder, build_boc_base64, cell_hash }
 
 fn main() {
-	addr := StdAddr.from_string('0:538b6135fd39fc707b0c1459469db104383c431d4d116ffd0d58cc75c95a3f95')
-	println(addr)
-	println('')
+	mut bb := CellBuilder.new()
+	bb.store_bool(true)
+	bc := bb.build()
 
-	keypair := KeyPair.generate()
-	println(keypair)
-	println('')
+	mut ab := CellBuilder.new()
+	ab.store_bool(false)
+	ab.store_ref(bc)
+	ac := ab.build()
 
-	mut b1 := CellBuilder.new()
-	b1.store_uint(0x0AAAAA, 24)
-	b1.store_bool(true)
-	b1.store_i16(-48)
-	println(b1)
-	leaf_cell := b1.build()
-	println(leaf_cell)
-	println('')
+	mut bb2 := CellBuilder.new()
+	bb2.store_bool(true)
+	bc2 := bb2.build()
 
-	mut b2 := CellBuilder.new()
-	b2.store_uint(0b10101, 5)
-	b2.store_ref(leaf_cell)
-	println(b2)
-	root_cell := b2.build()
-	println(root_cell)
-	println('')
+	mut rb := CellBuilder.new()
+	rb.store_bool(false)
+	rb.store_ref(ac)
+	rb.store_ref(bc2)
+	rc := rb.build()
+	println(rc)
 
-	boc := build_boc_bytes(root_cell)
-	println('Building BoC in hex bytes: ${boc.hex()}')
-
-	boc_base64 := build_boc_base64(root_cell)
-	println('Building BoC in base64:    ${boc_base64}')
-
-	boc_base64_2 := get_boc_base64_from_bytes(boc)
-	println('BoC in bytes to base64:    ${boc_base64_2}')
-
-	boc_from_base64 := get_boc_bytes_from_base64(boc_base64)
-	println('BoC in base64 to bytes:    ${boc_from_base64.hex()}')
+	// compute cell hash for signing
+	cell_hash_bytes := cell_hash(rc)
+	println(cell_hash_bytes.hex())
+	println(build_boc_base64(rc))
 }

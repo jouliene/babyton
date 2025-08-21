@@ -1,14 +1,18 @@
 module babyton
 
-//--------------------
+// -------------------
 // Cell builder module
-//--------------------
+// -------------------
 import bitfield { BitField }
+import math.big
 
 pub const max_cell_bits = 1023
 pub const max_cell_refs = 4
 
-// struct to hold up to 1023 bits and up to 4 reference (refs TODO)
+// Alias for uint128 using big.Integer for readability
+type U128 = big.Integer
+
+// struct to hold up to 1023 bits and up to 4 reference
 pub struct CellBuilder {
 mut:
 	data   BitField
@@ -51,6 +55,11 @@ pub fn (self CellBuilder) get_spare_bits() int {
 // return how many refs added
 pub fn (self CellBuilder) get_refs_len() int {
 	return self.refs.len
+}
+
+// return how many refs left
+pub fn (self CellBuilder) get_spare_refs() int {
+	return max_cell_refs - self.refs.len
 }
 
 // ---------- internal guard ------------
@@ -182,6 +191,23 @@ pub fn (mut self CellBuilder) store_u64(n u64) {
 	self.store_uint(n, 64)
 }
 
+// Store U128 (big.Integer) as 128 bits (big-endian)
+pub fn (mut self CellBuilder) store_u128(n U128) {
+	if n.signum < 0 || n.bit_len() > 128 {
+		panic('[ERROR] value does not fit in uint128')
+	}
+	bytes_arr, _ := n.bytes()
+	if bytes_arr.len > 16 {
+		panic('[ERROR] value exceeds uint128')
+	}
+	mut padded := []u8{len: 16}
+	copy_offset := 16 - bytes_arr.len
+	for i in 0 .. bytes_arr.len {
+		padded[copy_offset + i] = bytes_arr[i]
+	}
+	self.store_bytes(padded)
+}
+
 // ---------- Signed integers ----------
 
 // store n as a signed integer using exactly `bits` bits
@@ -250,13 +276,13 @@ pub fn (mut self CellBuilder) store_address(a StdAddr) {
 
 // ---------- Pubkeys ----------
 
-pub fn (mut self CellBuilder) store_pubkey(pk []u8) {
-	if pk.len != 32 {
+pub fn (mut self CellBuilder) store_pubkey(pubkey []u8) {
+	if pubkey.len != 32 {
 		panic('[ERROR] pubkey must be 32 bytes')
 	}
 	// 256 bits
 	self.ensure_capacity(256)
-	self.store_bytes(pk)
+	self.store_bytes(pubkey)
 }
 
 // ----------- Signature -----------

@@ -1,27 +1,32 @@
 module babyton
 
-// ------------------------------
+// ----------------------------
 // BoC (Bag of Cells) — minimal
 //   * single root
 //   * no index table
 //   * no CRC32C
-// ------------------------------
+// ----------------------------
 import encoding.base64
 
+// helpers: make a string key from a []u8 hash
+fn hash_key(c &Cell) string {
+	return cell_hash(c).bytestr()
+}
+
 // Performs iterative pre-order DFS to order cells: parents before children.
-// Returns a list of unique cells in serialization order.
-fn order_cells_parent_first(root &Cell) []&Cell {
+// Returns a list of unique cells in serialization order, de-duped by hash string.
+pub fn order_cells_parent_first(root &Cell) []&Cell {
 	mut out := []&Cell{}
-	mut seen := map[voidptr]bool{}
+	mut seen := map[string]bool{} // dedupe by content hash (string key)
 	mut stack := []&Cell{}
-	stack << root
+	stack << root	
 	for stack.len > 0 {
-		c := stack.pop()
-		key := voidptr(c)
-		if key in seen {
+		c := stack.pop()		
+		k := hash_key(c)
+		if k in seen {
 			continue
 		}
-		seen[key] = true
+		seen[k] = true
 		out << c
 		// push children in reverse to preserve left-to-right order
 		for i := c.refs.len - 1; i >= 0; i-- {
@@ -68,8 +73,8 @@ fn put_uint_be(mut dst []u8, value u32, size_bytes int) {
 }
 
 // Serializes a cell to flat bytes: D1 D2 packed_data ref_indices...
-// Ref indices are looked up from idx_of map and written in ref_size bytes
-fn serialize_cell_flat(c &Cell, idx_of map[voidptr]int, ref_size int) []u8 {
+// Ref indices are looked up from idx_of (keyed by string(cell hash)).
+fn serialize_cell_flat(c &Cell, idx_of map[string]int, ref_size int) []u8 {
 	d1, d2 := descriptors(c)
 	data := pack_data_bytes(c)
 
@@ -78,7 +83,7 @@ fn serialize_cell_flat(c &Cell, idx_of map[voidptr]int, ref_size int) []u8 {
 	out << d2
 	out << data
 	for r in c.refs {
-		idx := idx_of[voidptr(r)]
+		idx := idx_of[hash_key(r)]
 		put_uint_be(mut out, u32(idx), ref_size)
 	}
 	return out
@@ -86,13 +91,15 @@ fn serialize_cell_flat(c &Cell, idx_of map[voidptr]int, ref_size int) []u8 {
 
 // Build minimal BoC bytes (single root, no index/CRC)
 pub fn build_boc_bytes(root &Cell) []u8 {
-	// Order cells and build index map
+	// Order cells (dedup by hash string) and build index map
 	cells := order_cells_parent_first(root)
 	cells_count := cells.len
-	mut idx_of := map[voidptr]int{}
+
+	mut idx_of := map[string]int{}
 	for i, c in cells {
-		idx_of[voidptr(c)] = i
+		idx_of[hash_key(c)] = i
 	}
+	root_idx := idx_of[hash_key(root)] // explicit root index
 
 	// Choose sizes
 	ref_size := choose_ref_size(cells_count)
@@ -106,7 +113,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 		flats << f
 	}
 
-	// Determine header field width	
+	// Determine header field width
 	max_header := u32(if cells_count > total_cells_size { cells_count } else { total_cells_size })
 	size_bytes := choose_size_bytes(max_header)
 	off_bytes := size_bytes
@@ -117,7 +124,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 	// Magic bytes for BoC
 	boc << [u8(0xb5), 0xee, 0x9c, 0x72]
 
-	// Flags: has_idx=0, has_crc=0, has_cache_bits=0, flags=0, size_bytes	
+	// Flags: has_idx=0, has_crc=0, has_cache_bits=0, flags=0, size_bytes
 	boc << u8(size_bytes)
 
 	// off_bytes
@@ -128,7 +135,7 @@ pub fn build_boc_bytes(root &Cell) []u8 {
 	put_uint_be(mut boc, 1, size_bytes) // roots_count
 	put_uint_be(mut boc, 0, size_bytes) // absent_count
 	put_uint_be(mut boc, u32(total_cells_size), size_bytes) // total serialized cells size
-	put_uint_be(mut boc, 0, size_bytes) // root index (only one root: 0)
+	put_uint_be(mut boc, u32(root_idx), size_bytes) // root index
 
 	// body = concatenated flat cells
 	for f in flats {

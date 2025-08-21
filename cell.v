@@ -1,12 +1,12 @@
 module babyton
 
-// Ordinary-only TON cells: hashing + minimal BoC (single root, no index/CRC)
+// -----------------------
+// Ordinary-only TON cells
+// -----------------------
 import bitfield { BitField }
 import crypto.sha256
 
-// -----------------------------
 // Cell (ordinary only: level=0)
-// -----------------------------
 pub struct Cell {
 pub:
 	data   BitField // raw bits
@@ -33,7 +33,7 @@ pub fn (self CellBuilder) build() &Cell {
 	}
 }
 
-// Pretty print without descending into refs (avoids huge/circular dumps)
+// Pretty print without descending into refs
 pub fn (c Cell) str() string {
 	mut s := ''
 	for i in 0 .. c.bits {
@@ -42,10 +42,22 @@ pub fn (c Cell) str() string {
 	return 'Cell( bits:${c.bits} refs:${c.refs.len} data:${s} )'
 }
 
-// -----------------------------------------
+// Compute cell depth recursively
+pub fn (c &Cell) depth() int {
+	if c.refs.len == 0 {
+		return 0
+	}
+	mut max_d := 0
+	for child in c.refs {
+		d := child.depth()
+		if d > max_d {
+			max_d = d
+		}
+	}
+	return max_d + 1
+}
+
 // Bitstring packing (TON end-bit convention)
-// -----------------------------------------
-//
 // Pack MSB-first to bytes; if `bits % 8 != 0`, append one end-bit '1',
 // then zero-pad to the next octet.
 pub fn pack_data_bytes(c &Cell) []u8 {
@@ -74,10 +86,7 @@ pub fn pack_data_bytes(c &Cell) []u8 {
 	return out
 }
 
-// ----------------------
 // Descriptor bytes (D1,D2)
-// ----------------------
-//
 // D1 = refs + 8*exotic + 32*level  (here exotic=0, level=0 -> D1=refs)
 // D2 = floor(bits/8) + ceil(bits/8)
 pub fn descriptors(c &Cell) (u8, u8) {
@@ -87,22 +96,28 @@ pub fn descriptors(c &Cell) (u8, u8) {
 	return d1, d2
 }
 
-// -----------------------------------------
 // Representation hash (ordinary cells only)
-// -----------------------------------------
-//
-// hash = sha256( D1, D2, packed_data, hash(child_0), ..., hash(child_r-1) )
+// hash = sha256( D1, D2, packed_data, depth0 (BE16), depth1, ..., hash0, hash1, ...)
 pub fn cell_hash(c &Cell) []u8 {
 	d1, d2 := descriptors(c)
 	packed_data := pack_data_bytes(c)
 
-	mut digest_input := []u8{cap: 2 + packed_data.len + 32 * c.refs.len}
+	child_count := c.refs.len
+	mut digest_input := []u8{cap: 2 + packed_data.len + 2 * child_count + 32 * child_count}
 	digest_input << d1
 	digest_input << d2
 	digest_input << packed_data
+
+	for child in c.refs {
+		depth := child.depth()
+		digest_input << u8(depth >> 8)
+		digest_input << u8(depth & 0xFF)
+	}
+
 	for child in c.refs {
 		child_hash := cell_hash(child)
-		digest_input << child_hash
+		digest_input << child_hash[..]
 	}
+
 	return sha256.sum(digest_input)
 }
